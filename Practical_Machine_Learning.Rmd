@@ -1,0 +1,97 @@
+---
+title: "Coursera Practical Machine Learning: Course Project"
+author: "Todd Himple"
+date: "January 27, 2017"
+output: html_document
+---
+
+
+##Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect 
+a large amount of data about personal activity relatively inexpensively. These type of devices 
+are part of the quantified self movement - a group of enthusiasts who take measurements about 
+themselves regularly to improve their health, to find patterns in their behavior, or because 
+they are tech geeks. One thing that people regularly do is quantify how much of a particular 
+activity they do, but they rarely quantify how well they do it. 
+
+In this project, my goal is evaulate  data from accelerometers on the belt, forearm, arm, 
+and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly 
+in 5 different ways:
+
+* Class A: exactly according to the specification
+* Class B: throwing the elbows to the front
+* Class C: lifting the dumbbell only halfway
+* Class D: lowering the dumbbell only halfway
+* Class E: throwing the hips to the front
+
+More about this study can be found here:  http://groupware.les.inf.puc-rio.br/har#literature#ixzz4WEA9mGLy
+
+
+##R Packages:
+Installing possible packages that may be necessary for my analysis
+```{r Packages, include=TRUE}
+library(caret)
+library(rpart) 
+library(rpart.plot) 
+library(RColorBrewer)
+library(rattle)
+library(randomForest)
+```
+
+
+##Datasets
+Loading datasets and subsetting potentially useful data for analysis
+```{r data processing, include=TRUE}
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+valUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+Training_Data <- read.csv(url(trainUrl), header=TRUE)
+train_subset <- Training_Data[,c(8:11,37:49,60:68,84:86,102,113:124,140,151:160)]
+
+dim(train_subset)
+#[1] 19622    53
+#head(train_subset)
+```
+
+
+##Partitioning data
+Creating two separate datasets, one for training (75%) and one for testing (25%)
+```{r partitioning, include=TRUE}
+inTrain <- createDataPartition(train_subset$classe, p = .75, list = FALSE)
+training_data <- train_subset[inTrain, ]
+testing_data <- train_subset[-inTrain, ]
+
+#dim(training_data)
+#dim(testing_data)
+```
+
+
+##Model training
+Training model using Random Forest due to it's high accuracy.  The model is build on a 
+training set of 19,622 records and 53 variables. 
+```{r training, include=TRUE}
+set.seed(123) #for reproducability
+random_forest <- randomForest(classe~.,data=training_data,ntree=100,importance=TRUE)
+random_forest
+
+##Plotting the error rate as a function of the number of trees
+plot(random_forest)
+```
+
+
+The model shows 99.55% accuracy on the training data.  Additionally, the plot shows the error
+rate approaching new zero at it reaches 100 trees
+
+
+##Validation
+Training model using Random Forest due to it's high accuracy.  The model is build on a 
+training set of 19,622 records and 53 variables. 
+```{r validation, include=TRUE}
+test_predictions <- predict(random_forest, newdata=testing_data)
+confusionMatrix(test_predictions,testing_data$classe)
+```
+The test dataset was then applied to the trained model, which returned a very high 
+accuracy of 99.59%
+
+
+
